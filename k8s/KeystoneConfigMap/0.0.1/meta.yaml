@@ -1,0 +1,27 @@
+handler: k8s
+version: 0.0.1
+input:
+  dns_name:
+    schema: str!
+    value:
+  debug:
+    schema: bool
+    value: False
+  log_file:
+    schema: str
+    value: '/var/log/keystone/keystone.log'
+  db_user:
+    schema: str!
+    value: 
+  db_password:
+    schema: str!
+    value: 
+  db_host:
+    schema: str!
+    value: 
+  db_name:
+    schema: str!
+    value: 
+  admin_token:
+    schema: str
+    value: 'admin'

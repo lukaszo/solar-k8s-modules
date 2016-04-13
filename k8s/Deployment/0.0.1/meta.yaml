@@ -1,0 +1,18 @@
+handler: k8s
+version: 0.0.1
+input:
+  dns_name:
+    schema: str!
+    value:
+  replicas:
+    schena: int
+    value: 1
+  labels:
+    schema: []
+    value: []
+  containers:
+    schema: []
+    value: []
+  volumes:
+    chema: []
+    value: []

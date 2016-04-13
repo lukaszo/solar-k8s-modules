@@ -1,0 +1,34 @@
+resources:
+  - id: mariadb_deployment
+    from: k8s/Deployment
+    input:
+      dns_name: mariadb-deployment
+      labels:
+        app: mariadb
+      containers:
+      - name: mariadb
+        image: kollaglue/fedora-rdo-mariadb
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: mariadb
+        resources:
+          limits:
+            cpu: "0.1"
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: data
+      volumes:
+      - name: data
+        emptyDir: {}
+
+  - id: mariadb_service
+    from: k8s/Service
+    input:
+      dns_name: mariadb-service
+      ports:
+      - port: 3306
+        targetPort: 3306
+      selector:
+        app: mariadb

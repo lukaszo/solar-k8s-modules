@@ -1,0 +1,42 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{dns_name}}
+spec:
+  replicas: {{replicas}}
+  template:
+    metadata:
+      labels:
+        {{labels | to_nice_yaml}}
+    spec:
+      containers:
+      {% for container in containers %}
+      - image: {{ container['image'] }}
+        name: {{ container['name'] }}
+        command:
+        {% for cmd in container['command'] %}
+        - {{ cmd }}
+        {% endfor %}
+        ports:
+        {% for port in container['ports'] %}
+        - containerPort: {{port['containerPort']}}
+        {% endfor %}
+        volumeMounts:
+        {% for volume in container['volumeMounts'] %}
+        - mountPath: {{volume['mountPath']}}
+          name: {{volume['name']}}
+        {% endfor %}
+      {% endfor %}
+      volumes:
+        {% for volume in volumes %}
+        - name: {{ volume['name'] }}
+          {% if volume['configMap'] %}
+          configMap:
+            name: {{ volume ['configMap']['name']}}
+            items:
+            {% for item in volume ['configMap']['items'] %}
+            - key: {{item['key']}}
+              path: {{item['path']}}
+            {% endfor %}
+          {% endif %}
+        {% endfor %}

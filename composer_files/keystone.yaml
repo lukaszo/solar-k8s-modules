@@ -1,0 +1,37 @@
+resources:
+  - id: keystone_config_map
+    from: k8s/KeystoneConfigMap
+    input:
+      dns_name: keystone-config
+      db_user: root
+      db_password: mariadb
+      db_name: keystone
+      db_host: mariadb.default.svc.cluster.local      
+      debug: True
+
+  - id: keystone_api_deployment
+    from: k8s/Deployment
+    input:
+      dns_name: keystone-api-deployment
+      labels:
+        app: keystone-api
+      containers:
+      - command:
+        - /usr/bin/keystone-all
+        image: registry01-scc.fuel-infra.org/nextgen/ubuntu-binary-keystone:latest
+        name: keystone
+        ports:
+        - containerPort: 5000
+        - containerPort: 35357
+        volumeMounts:
+        - mountPath: /etc/keystone
+          name: keystone-config-volume
+      volumes:
+      - name: keystone-config-volume
+        configMap:
+          name: keystone-config
+          items:
+          - key: keystone.conf
+            path: keystone.conf
+          - key: keystone-paste.ini
+            path: keystone-paste.ini
