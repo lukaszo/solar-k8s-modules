@@ -49,7 +49,6 @@ class K8S(TempFileHandler):
             k8s_obj = k8s_class(api, obj)
             k8s_obj.create()
         elif action_name == 'update':
-            import ipdb;ipdb.set_trace()
             k8s_class = getattr(pykube.objects, k8s_class)
             k8s_obj = k8s_class(api, obj)
             k8s_obj.reload()
