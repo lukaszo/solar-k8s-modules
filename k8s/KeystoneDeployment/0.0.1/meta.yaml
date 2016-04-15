@@ -1,0 +1,30 @@
+handler: k8s
+version: 0.0.1
+input:
+  dns_name:
+    schema: str!
+    value:
+  image:
+    schema: str!
+    value:
+  container_name:
+    schema: str!
+    value:
+  command:
+    schema: str
+    value:
+  config_map:
+    schema: str!
+    value:
+  public_port:
+    schema: int!
+    value: 5000
+  admin_port:
+    schema: int!
+    value: 35357
+  replicas:
+    schena: int
+    value: 1
+  labels:
+    schema: []
+    value: []

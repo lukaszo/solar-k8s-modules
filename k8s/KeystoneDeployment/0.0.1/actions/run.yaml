@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{dns_name}}
+spec:
+  replicas: {{replicas}}
+  template:
+    metadata:
+      labels:
+        {{labels | to_nice_yaml}}
+    spec:
+      containers:
+      - image: {{ image }}
+        name: {{ container_name }}
+        {% if command%}
+        command:
+        {% for c in command.split() %}
+        - {{ c }}
+        {% endfor %}
+        {% endif %}
+        ports:
+        - containerPort: {{public_port}}
+        - containerPort: {{admin_port}}
+        volumeMounts:
+        - mountPath: /etc/keystone
+          name: keystone-config-volume
+      volumes:
+      - configMap:
+          items:
+          - key: keystone.conf
+            path: keystone.conf
+          - key: keystone-paste.ini
+            path: keystone-paste.ini
+          name: {{config_map}}
+        name: keystone-config-volume
+ 

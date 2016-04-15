@@ -10,28 +10,14 @@ resources:
       debug: True
 
   - id: keystone_api_deployment
-    from: k8s/Deployment
+    from: k8s/KeystoneDeployment
     input:
       dns_name: keystone-api-deployment
       labels:
         app: keystone-api
-      containers:
-      - command:
-        - /usr/bin/keystone-all
-        image: registry01-scc.fuel-infra.org/nextgen/ubuntu-binary-keystone:latest
-        name: keystone
-        ports:
-        - containerPort: 5000
-        - containerPort: 35357
-        volumeMounts:
-        - mountPath: /etc/keystone
-          name: keystone-config-volume
-      volumes:
-      - name: keystone-config-volume
-        configMap:
-          name: keystone-config
-          items:
-          - key: keystone.conf
-            path: keystone.conf
-          - key: keystone-paste.ini
-            path: keystone-paste.ini
+      command: /usr/bin/keystone-all
+      image: registry01-scc.fuel-infra.org/nextgen/ubuntu-binary-keystone:latest
+      container_name: keystone
+      public_port: 5000
+      admin_port: 35357
+      config_map: keystone-config
