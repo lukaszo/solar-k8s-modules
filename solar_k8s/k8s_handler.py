@@ -49,7 +49,15 @@ class K8S(TempFileHandler):
             k8s_obj = k8s_class(api, obj)
             k8s_obj.create()
         elif action_name == 'update':
-            raise NotImplemented(action_name)
+            import ipdb;ipdb.set_trace()
+            k8s_class = getattr(pykube.objects, k8s_class)
+            k8s_obj = k8s_class(api, obj)
+            k8s_obj.reload()
+            # generate new data
+            new_data = self._compile_action_file(resource, 'run')
+            new_obj = yaml.load(open(new_data).read())
+            _update_obj(k8s_obj.obj, new_obj)
+            k8s_obj.update()
         elif action_name == 'delete':
             raise NotImplemented(action_name)
         else:
@@ -74,4 +82,22 @@ class K8S(TempFileHandler):
             args['_configs'] = self._configs
         return args
 
-
+def _update_obj(obj, new_obj):
+    for key, value in new_obj.iteritems():
+        if key in obj:
+            if isinstance(value, dict):
+                _update_obj(obj[key], value)
+            elif isinstance(value, list):
+                # XXX: fix me?
+                elements = []
+                for i, el in enumerate(value):
+                    if i < len(obj[key]) and isinstance(el, dict):
+                        _update_obj(obj[key][i], el)
+                        elements.append(obj[key][i])
+                    else:
+                        elements.append(el)
+                obj[key] = elements
+            else:
+                obj[key] = value
+        else:
+            obj[key] = value
