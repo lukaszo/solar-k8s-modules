@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 import os
+import shutil
+import tempfile
 
 from solar.core.handlers.base import TempFileHandler
 from solar.core.log import log
@@ -67,8 +69,11 @@ class K8S(TempFileHandler):
         configs_path = os.path.join(base_path, 'configs')
         if not os.path.exists(configs_path):
             return []
+        # copy config templates to tmp dir
+        tmp_dir = tempfile.mkdtemp()
+        shutil.copytree(configs_path, tmp_dir)
         configs = []
-        for path in self._render_dir(resource, configs_path):
+        for path in self._render_dir(resource, tmp_dir):
             name = os.path.basename(path)
             with open(path) as f:
                 data = [line for line in f.read().splitlines() if line.strip()]
