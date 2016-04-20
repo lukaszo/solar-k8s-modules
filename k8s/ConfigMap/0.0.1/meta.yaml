@@ -3,8 +3,9 @@ version: 0.0.1
 k8s_class: ConfigMap
 input:
   name:
-    schema: str!
-    value:
-  file:
     schema: str
-    value:
+    value: null
+    computable:
+      lang: python
+      type: full
+      func: ""

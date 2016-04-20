@@ -1,0 +1,31 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{dns_name}}
+spec:
+  replicas: {{replicas}}
+  template:
+    metadata:
+      labels:
+        {{labels | to_nice_yaml}}
+    spec:
+      containers:
+      - image: {{ image }}
+        {% if command%}
+        command:
+        {% for c in command.split() %}
+        - {{ c }}
+        {% endfor %}
+        {% endif %}
+        name: {{ container_name }}
+        ports:
+        - containerPort: {{public_port}}
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: {{db_password}}
+      volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: mariadb-data
+      volumes:
+        - name: mariadb-data
+          emptyDir: {}

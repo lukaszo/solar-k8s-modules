@@ -10,21 +10,15 @@ input:
   container_name:
     schema: str!
     value:
+  db_password:
+    schema: str!
+    value:
   command:
     schema: str
     value:
-  config_map:
-    schema: str!
-    value:
-  config_map_revision:
-    schema: str!
-    value:
   public_port:
     schema: int!
-    value: 5000
-  admin_port:
-    schema: int!
-    value: 35357
+    value: 3306
   replicas:
     schena: int
     value: 1

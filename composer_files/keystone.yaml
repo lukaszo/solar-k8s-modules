@@ -3,11 +3,17 @@ resources:
     from: k8s/KeystoneConfigMap
     input:
       dns_name: keystone-config
-      db_user: root
-      db_password: mariadb
-      db_name: keystone
-      db_host: mariadb.default.svc.cluster.local      
-      debug: True
+      C:
+        db_user: root
+        db_password: mariadb
+        db_name: keystone
+        db_host: mariadb.default.svc.cluster.local
+        debug: True
+        log_file: '/var/log/keystone/keystone.log'
+      hash:
+        computable:
+          connections:
+          - keystone_config_map::C::NO_EVENTS
 
   - id: keystone_api_deployment
     from: k8s/KeystoneDeployment
@@ -21,3 +27,4 @@ resources:
       public_port: 5000
       admin_port: 35357
       config_map: keystone-config
+      config_map_revision: keystone_config_map::hash

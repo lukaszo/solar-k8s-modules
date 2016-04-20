@@ -25,12 +25,11 @@ spec:
         - mountPath: /etc/keystone
           name: keystone-config-volume
       volumes:
-      - configMap:
-          items:
-          - key: keystone.conf
-            path: keystone.conf
-          - key: keystone-paste.ini
-            path: keystone-paste.ini
+      - name: keystone-config-volume
+        configMap:
           name: {{config_map}}
-        name: keystone-config-volume
- 
+          items:
+          - key: {{ 'keystone.conf' + config_map_revision|string }}
+            path: keystone.conf
+          - key: {{ 'keystone-paste.ini' + config_map_revision|string }}
+            path: keystone-paste.ini

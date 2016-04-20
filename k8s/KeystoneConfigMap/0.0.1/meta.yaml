@@ -4,24 +4,13 @@ input:
   dns_name:
     schema: str!
     value:
-  debug:
-    schema: bool
-    value: False
-  log_file:
+  C:
+    schema: dict!
+    value: 
+  hash:
     schema: str
-    value: '/var/log/keystone/keystone.log'
-  db_user:
-    schema: str!
-    value: 
-  db_password:
-    schema: str!
-    value: 
-  db_host:
-    schema: str!
-    value: 
-  db_name:
-    schema: str!
-    value: 
-  admin_token:
-    schema: str
-    value: 'admin'
+    value: null
+    computable:
+      lang: python
+      type: full
+      func: "return str(hash(''.join([str(k)+str(v) for k,v in R[R.keys()[0]].iteritems()])))"

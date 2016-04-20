@@ -1,9 +1,9 @@
 [DEFAULT]
-debug = {{debug}}
+debug = {{C['debug']}}
 
-log_file = {{log_file}}
+log_file = {{C['log_file']}}
 
 secure_proxy_ssl_header = HTTP_X_FORWARDED_PROTO
 
 [database]
-connection = mysql+pymysql://{{db_user}}:{{db_password}}@{{db_host}}/{{db_name}}
+connection = mysql+pymysql://{{C['db_user']}}:{{C['db_password']}}@{{C['db_host']}}/{{C['db_name']}}

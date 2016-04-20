@@ -4,7 +4,7 @@ metadata:
   name: {{dns_name}}
 data:
   {%- for config in _configs %}
-  {{config['name']}}: |-
+  {{config['name'] + hash|string }}: |-
     {%- for line in config['data'] %}
     {% if line.strip() %}{{ line }}{% endif %}{% endfor %}
   {% endfor %}
