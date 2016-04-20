@@ -26,6 +26,8 @@ import pykube.objects
 
 import yaml
 
+from solar_k8s import jsondiff
+
 
 class K8S(TempFileHandler):
     def __init__(self, resources, handlers=None):
@@ -58,6 +60,8 @@ class K8S(TempFileHandler):
             new_data = self._compile_action_file(resource, 'run')
             new_obj = yaml.load(open(new_data).read())
             _update_obj(k8s_obj.obj, new_obj)
+            # hacky
+            pykube.objects.jsonpatch.make_patch = jsondiff.make
             k8s_obj.update()
         elif action_name == 'delete':
             raise NotImplemented(action_name)
@@ -70,7 +74,7 @@ class K8S(TempFileHandler):
         if not os.path.exists(configs_path):
             return []
         # copy config templates to tmp dir
-        tmp_dir = tempfile.mkdtemp()
+        tmp_dir = os.path.join(tempfile.mkdtemp(), 'configs')
         shutil.copytree(configs_path, tmp_dir)
         configs = []
         for path in self._render_dir(resource, tmp_dir):
