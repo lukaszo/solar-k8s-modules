@@ -15,6 +15,7 @@
 import os
 import shutil
 import tempfile
+import time
 
 from solar.core.handlers.base import TempFileHandler
 from solar.core.log import log
@@ -52,6 +53,7 @@ class K8S(TempFileHandler):
             k8s_class = getattr(pykube.objects, k8s_class)
             k8s_obj = k8s_class(api, obj)
             k8s_obj.create()
+            self._wait_for(k8s_obj)
         elif action_name == 'update':
             k8s_class = getattr(pykube.objects, k8s_class)
             k8s_obj = k8s_class(api, obj)
@@ -63,6 +65,7 @@ class K8S(TempFileHandler):
             # hacky
             pykube.objects.jsonpatch.make_patch = jsondiff.make
             k8s_obj.update()
+            self._wait_for(k8s_obj)
         elif action_name == 'delete':
             raise NotImplemented(action_name)
         else:
@@ -83,6 +86,15 @@ class K8S(TempFileHandler):
                 data = [line for line in f.read().splitlines() if line.strip()]
             configs.append({'name': name, 'data': data})
         return configs
+
+    def _wait_for(self, obj):
+        if obj.obj['kind'] == 'Deployment':
+            while True:
+                obj.reload()
+                if obj.obj['status'].get('updatedReplicas', 0) > 0 and \
+                   obj.obj['status'].get('availableReplicas', 0) > 0:
+                       return
+                time.sleep(1)
 
     def _make_args(self, resource):
         args = super(K8S, self)._make_args(resource)
