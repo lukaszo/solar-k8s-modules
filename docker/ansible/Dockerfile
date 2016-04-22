@@ -1,4 +1,4 @@
-FROM ubuntu:14.04
+FROM ubuntu:16.04
 MAINTAINER loles
 
 RUN apt-get update
@@ -7,7 +7,8 @@ RUN apt-get -y --no-install-recommends install \
         ca-certificates \
         git \
         libffi-dev \
-        libmariadbclient-dev \
+        libmariadb2 \
+        libmysqlclient-dev \
         libssl-dev \
         libxslt1-dev \
         python-dev \

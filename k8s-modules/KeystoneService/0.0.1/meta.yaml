@@ -1,0 +1,15 @@
+handler: k8s
+version: 0.0.1
+input:
+  dns_name:
+    schema: str!
+    value:
+  public_port:
+    schema: int!
+    value:
+  admin_port:
+    schema: int!
+    value:
+  selector:
+    schema: {}
+    value: {}

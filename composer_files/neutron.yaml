@@ -1,0 +1,37 @@
+resources:
+  - id: neutron_config_map
+    from: k8s/NeutronConfigMap
+    input:
+      dns_name: keystone-config
+      C:
+        db_user: neutron
+        db_password: neutron
+        db_name: neutron
+        db_host: mariadb.default.svc.cluster.local
+        debug: True
+        log_file: '/var/log/neutron/neutron.log'
+      hash:
+        computable:
+          connections:
+          - neutron_config_map::C::NO_EVENTS
+
+  - id: neutron_api
+    from: k8s/NeutronApirDeployment
+    input:
+      dns_name: neutron-api-deployment
+      labels:
+        app: neutron-api
+      command: /usr/bin/neutron
+      image: registry01-scc.fuel-infra.org/nextgen/ubuntu-binary-neutron:latest
+      container_name: neutron-api
+      public_port: 9696
+      config_map: neutron-config
+      config_map_revision: neutron_config_map::hash
+
+  - id: neutron_api_service
+    from: k8s/NeutronApiService
+    input:
+      dns_name: neutron-api-service
+      public_port: neutron_api_deployment::public_port
+      selector:
+        app: neutron-api
