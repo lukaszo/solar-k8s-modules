@@ -1,0 +1,21 @@
+resources:
+  - id: rabbitmq_deployment
+    from: k8s/RabbitmqDeployment
+    input:
+      dns_name: rabbitmq
+      labels:
+        app: rabbitmq
+      container_name: rabbitmq
+      image: rabbitmq:3-management
+      user: openstack
+      password: openstack
+      vhost: openstack
+      cookie: anything1
+      ports: [5672, 8080]
+  - id: rabbitmq_service
+    from: k8s/RabbitmqService
+    input:
+      dns_name: rabbitmq_deployment::dns_name
+      ports: rabbitmq_deployment::ports
+      selector:
+        app: rabbitmq
