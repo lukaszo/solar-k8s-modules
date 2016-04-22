@@ -44,14 +44,16 @@ class K8SJobSyncTransport(SyncTransport):
         keys = {}
         i = 0
         for root, dirs, files in os.walk(path):
-            local_root = root.replace(path, '')
+            local_root = root.replace('/tmp/solar_local/', '')
+            # if local_root.startswith('/'):
+            #     local_root = local_root[1:]
             for f in files:
                 with open(os.path.join(root, f), 'rb') as fd:
                     data = fd.read()
                 key = os.path.join(local_root, f)
                 files_data['data%d' % (num_prefix + i)] = data
-                i += 1
                 keys['data%d' % (num_prefix + i)] = key
+                i += 1
 
         return {'keys': keys, 'files_data': files_data}
 
@@ -59,7 +61,7 @@ class K8SJobSyncTransport(SyncTransport):
         datas = self.configmap_datas
         keys = {}
         for single in datas:
-            keys.update(single)
+            keys.update(single['keys'])
         return keys
 
     def make_configmap_obj(self, datas):
@@ -84,7 +86,7 @@ class K8SJobSyncTransport(SyncTransport):
         for i, (resource, path, to) in enumerate(self.paths):
             datas.append(self.make_confimap_data(resource, path, i))
 
-        self.configmap_name = resource.name
+        self.configmap_name = 'configmap' + resource.name
         self.configmap_namespace = 'default'
         self.configmap_datas = datas
 
@@ -111,20 +113,19 @@ class K8SJobRunTransport(RunTransport):
         command = args
         items = self.get_volume_items(resource)
         sync_transport = resource._bat_transport_sync
+        name = resource.name
         # kubernetes api...
         obj = {
-            # 'apiVersion': 'extensions/v1beta1',
             'apiVersion': 'batch/v1',
             'kind': 'Job',
-            'metadata': {'name': 'job' + sync_transport.configmap_name},
+            'metadata': {'name': 'job' + name},
             'spec': {'template':
                      {'metadata': {
-                         'name': 'cnts' + sync_transport.configmap_name
+                         'name': 'cnts' + name
                          },
                       'spec': {
                           'containers': [
-                              {'name': 'cnt' + sync_transport.configmap_name,
-                               # 'image': 'handler-%s' % handler,
+                              {'name': 'cnt' + name,
                                'image': "williamyeh/ansible:alpine3",
                                'command': command,
                                'volumeMounts': [
@@ -135,10 +136,10 @@ class K8SJobRunTransport(RunTransport):
                           'volumes': [
                               {'name': 'config-volume',
                                'configMap': {
-                                'name': 'job-config',
+                                'name': sync_transport.configmap_name,
                                 'items': items
                                }}
                           ],
                           'restartPolicy': 'Never'
                       }}}}
-        pykube.objects.Job(api, obj).create()
+        Job(api, obj).create()
