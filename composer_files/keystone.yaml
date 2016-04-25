@@ -1,6 +1,6 @@
 resources:
   - id: keystone_config_map
-    from: k8s/KeystoneConfigMap
+    from: k8s-modules/KeystoneConfigMap
     input:
       dns_name: keystone-config
       C:
@@ -16,7 +16,7 @@ resources:
           - keystone_config_map::C::NO_EVENTS
 
   - id: keystone_api_deployment
-    from: k8s/KeystoneDeployment
+    from: k8s-modules/KeystoneDeployment
     input:
       dns_name: keystone-api-deployment
       labels:
