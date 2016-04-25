@@ -98,8 +98,8 @@ class K8SJobSyncTransport(SyncTransport):
         for i, (resource, path, to) in enumerate(self.paths):
             datas.append(self.make_confimap_data(resource, path, i))
 
-        self.data_sufix = random_string(8)
-        self.configmap_name = 'configmap' + resource.name + self.data_sufix
+        self.data_sufix = random_string(52)
+        self.configmap_name = 'configmap' + self.data_sufix
         self.configmap_namespace = 'default'
         self.configmap_datas = datas
 
@@ -144,7 +144,7 @@ class K8SJobRunTransport(RunTransport):
         command = args
         items = self.get_volume_items(resource)
         sync_transport = resource._bat_transport_sync
-        name = resource.name + sync_transport.data_sufix
+        name = sync_transport.data_sufix
         job_name = 'job' + name
         # kubernetes api...
         obj = {
