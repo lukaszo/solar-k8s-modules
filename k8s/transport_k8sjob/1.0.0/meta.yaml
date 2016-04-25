@@ -1,0 +1,22 @@
+input:
+  name:
+    schema: str!
+    value: 'k8s_job'
+  host:
+    schema: str
+    value: '10.0.0.3'
+  user:
+    schema: str!
+    value: 'root'
+  port:
+    schema: int
+    value: 8080
+  location_id:
+    schema: str
+    value:
+    reverse: True
+    is_own: False
+  transports_id:
+    schema: str
+    value:
+    is_emit: False
