@@ -1,1 +1,1 @@
-pykube
+-e https://github.com/pigmej/pykube/archive/master.zip#egg=pykube
