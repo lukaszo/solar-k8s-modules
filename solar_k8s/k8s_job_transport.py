@@ -13,14 +13,20 @@
 #    under the License.
 
 import os
+import random
+import string
+import time
+
 
 from solar.core.log import log
 from solar.core.transports.base import SyncTransport
 from solar.core.transports.base import RunTransport
+from solar.core.transports.base import SolarTransportResult
 
 from pykube.config import KubeConfig
 from pykube.http import HTTPClient
 import pykube.objects
+
 
 
 class Job(pykube.objects.NamespacedAPIObject):
@@ -28,6 +34,12 @@ class Job(pykube.objects.NamespacedAPIObject):
     version = "batch/v1"
     endpoint = "jobs"
     kind = "Job"
+
+
+def random_string(length=6):
+    return ''.join([random.choice(
+        string.ascii_lowercase
+    ) for _ in xrange(length)])
 
 
 class K8SJobSyncTransport(SyncTransport):
@@ -86,14 +98,16 @@ class K8SJobSyncTransport(SyncTransport):
         for i, (resource, path, to) in enumerate(self.paths):
             datas.append(self.make_confimap_data(resource, path, i))
 
-        self.configmap_name = 'configmap' + resource.name
+        self.data_sufix = random_string(8)
+        self.configmap_name = 'configmap' + resource.name + self.data_sufix
         self.configmap_namespace = 'default'
         self.configmap_datas = datas
 
         obj = self.make_configmap_obj(datas)
 
-        pykube.objects.ConfigMap(api, obj).create()  # wait ?
-
+        self.configmap_obj = pykube.objects.ConfigMap(api, obj)
+        self.configmap_obj.create()
+        log.debug("Created ConfigMap: %s", self.configmap_obj.name)
         return
 
 
@@ -107,18 +121,36 @@ class K8SJobRunTransport(RunTransport):
             items.append({'key': key, 'path': path})
         return items
 
+    def _pod_status(self, pod):
+        statuses = pod.obj['status']['containerStatuses']
+        for status in statuses:
+            rc = status['restartCount']
+            log.debug("Checking container status %r for job", status)
+            terminated = status.get('terminated')
+            if terminated:
+                reason = terminated['reason']
+                return rc, reason
+        return rc, None
+
+    def _clean_job(self, cfg_obj, job_obj):
+        log.debug("Cleaning job")
+        cfg_obj.delete()
+        job_obj.delete()
+
     def run(self, resource, *args, **kwargs):
+        # TODO: clean on exceptions too
         api = HTTPClient(KubeConfig.from_file('~/.kube/config'))
         # handler = resource.db_obj.handler
         command = args
         items = self.get_volume_items(resource)
         sync_transport = resource._bat_transport_sync
-        name = resource.name
+        name = resource.name + sync_transport.data_sufix
+        job_name = 'job' + name
         # kubernetes api...
         obj = {
             'apiVersion': 'batch/v1',
             'kind': 'Job',
-            'metadata': {'name': 'job' + name},
+            'metadata': {'name': job_name},
             'spec': {'template':
                      {'metadata': {
                          'name': 'cnts' + name
@@ -140,6 +172,45 @@ class K8SJobRunTransport(RunTransport):
                                 'items': items
                                }}
                           ],
-                          'restartPolicy': 'Never'
+                          'restartPolicy': 'OnFailure'
                       }}}}
-        Job(api, obj).create()
+        self.job_obj = job_obj = Job(api, obj)
+        job_obj.create()
+        log.debug("Created JOB: %s", job_obj.name)
+        job_status = False
+        rc = 0
+        while True:
+            log.debug("Starting K8S job loop check")
+            time.sleep(1)
+            job_obj.reload()
+            job_status = job_obj.obj['status']
+            if job_status.get('active', 0) >= 1:
+                log.debug("Job is active")
+                # for now assuming that we have only one POD for JOB
+                pods = list(pykube.Pod.objects(api).filter(selector='job-name={}'.format(job_name)))
+                if pods:
+                    pod = pods[0]
+                    log.debug("Found pods for job")
+                    rc, status = self._pod_status(pod)
+                    if rc > 1:
+                        log.debug("Container was restarted")
+                        break
+                    if status == 'Error':
+                        log.debug("State is Error")
+                        break
+            if job_status.get('succeeded', 0) >= 1:
+                log.debug("Job succeeded")
+                job_status = True
+                pods = list(pykube.Pod.objects(api).filter(selector='job-name={}'.format(job_name)))
+                pod = pods[0]
+                break
+        txt_logs = pod.get_logs()
+        log.debug("Output from POD: %s", txt_logs)
+        if job_status:
+            stdout = txt_logs
+            stderr = ''
+        else:
+            stdout = ''
+            stderr = txt_logs
+        self._clean_job(sync_transport.configmap_obj, self.job_obj)
+        return SolarTransportResult.from_tuple(rc, stdout, stderr)
