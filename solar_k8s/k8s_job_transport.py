@@ -158,7 +158,7 @@ class K8SJobRunTransport(RunTransport):
                       'spec': {
                           'containers': [
                               {'name': 'cnt' + name,
-                               'image': "williamyeh/ansible:alpine3",
+                               'image': 'solarproject/ansible:latest',
                                'command': command,
                                'volumeMounts': [
                                    {'name': 'config-volume',
