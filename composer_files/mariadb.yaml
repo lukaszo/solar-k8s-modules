@@ -1,6 +1,6 @@
 resources:
   - id: mariadb_deployment
-    from: k8s/MariadbDeployment
+    from: k8s-modules/MariadbDeployment
     input:
       dns_name: mariadb-deployment
       labels:
@@ -10,7 +10,7 @@ resources:
       db_password: mariadb
 
   - id: mariadb_service
-    from: k8s/MariadbService
+    from: k8s-modules/MariadbService
     input:
       dns_name: mariadb-service
       port: mariadb_deployment::public_port
