@@ -1,6 +1,6 @@
 resources:
   - id: rabbitmq_deployment
-    from: k8s/RabbitmqDeployment
+    from: k8s-modules/RabbitmqDeployment
     input:
       dns_name: rabbitmq
       labels:
@@ -13,7 +13,7 @@ resources:
       cookie: anything1
       ports: [5672, 8080]
   - id: rabbitmq_service
-    from: k8s/RabbitmqService
+    from: k8s-modules/RabbitmqService
     input:
       dns_name: rabbitmq_deployment::dns_name
       ports: rabbitmq_deployment::ports
