@@ -1,0 +1,57 @@
+resources:
+  - id: mariadb_deployment
+    from: k8s/MariadbDeployment
+    input:
+      dns_name: mariadb-deployment
+      labels:
+        app: mariadb
+      container_name: mariadb
+      image: kollaglue/fedora-rdo-mariadb
+      db_password: mariadb
+
+  - id: mariadb_service
+    from: k8s/MariadbService
+    input:
+      dns_name: mariadb-service
+      port: mariadb_deployment::public_port
+      selector:
+        app: mariadb
+
+  - id: keystone_config_map
+    from: k8s/KeystoneConfigMap
+    input:
+      dns_name: keystone-config
+      C:
+        db_user: root
+        db_password: mariadb
+        db_name: keystone
+        db_host: mariadb.default.svc.cluster.local
+        debug: True
+        log_file: '/var/log/keystone/keystone.log'
+      hash:
+        computable:
+          connections:
+          - keystone_config_map::C::NO_EVENTS
+
+  - id: keystone_api_deployment
+    from: k8s/KeystoneDeployment
+    input:
+      dns_name: keystone-api-deployment
+      labels:
+        app: keystone-api
+      command: /usr/bin/keystone-all
+      image: registry01-scc.fuel-infra.org/nextgen/ubuntu-binary-keystone:latest
+      container_name: keystone
+      public_port: 5000
+      admin_port: 35357
+      config_map: keystone-config
+      config_map_revision: keystone_config_map::hash
+
+  - id: keystone_service
+    from: k8s/KeystoneService
+    input:
+      dns_name: keystone-service
+      public_port: keystone_api_deployment::public_port
+      admin_port: keystone_api_deployment::admin_port
+      selector:
+        app: keystone-api

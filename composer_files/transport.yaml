@@ -1,0 +1,10 @@
+resources:
+  - id: k8s_job_transport
+    from: k8s-modules/transport_k8sjob
+
+  - id: k8s_api
+    from: resources/transports
+    input:
+      transports:
+        - name: k8s_job_transport::name
+          user: k8s_job_transport::user

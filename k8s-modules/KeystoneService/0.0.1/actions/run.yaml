@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{dns_name}}
+spec:
+  ports:
+  - port: {{public_port}}
+    targetPort: {{public_port}}
+    name: "public-port"
+  - port: {{admin_port}}
+    targetPort: {{admin_port}}
+    name: "private-port"
+  selector:
+    {{ selector | to_nice_yaml }}

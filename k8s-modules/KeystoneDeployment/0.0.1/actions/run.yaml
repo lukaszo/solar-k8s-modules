@@ -14,7 +14,7 @@ spec:
         name: {{ container_name }}
         {% if command%}
         command:
-        {% for c in command.split() %}
+        {% for c in command %}
         - {{ c }}
         {% endfor %}
         {% endif %}
@@ -33,3 +33,5 @@ spec:
             path: keystone.conf
           - key: {{ 'keystone-paste.ini' + config_map_revision|string }}
             path: keystone-paste.ini
+          - key: {{ 'policy.json' + config_map_revision|string }}
+            path: policy.json

@@ -1,19 +1,47 @@
 resources:
+  - id: keystone_db
+    from: resources/mariadb_db
+    location: k8s_api
+    input:
+      db_name: keystone_db
+      login_user: root
+      login_password: mariadb
+      login_port: 3306
+      db_host: mariadb-service
+
+  - id: keystone_user
+    from: resources/mariadb_user
+    location: k8s_api
+    input:
+      db_host: mariadb-service
+      db_name: keystone_db
+      login_user: root
+      login_password: mariadb
+      login_port: 3306
+      user_name: keystone
+      user_password: keystone
+
   - id: keystone_config_map
     from: k8s-modules/KeystoneConfigMap
     input:
       dns_name: keystone-config
-      C:
-        db_user: root
-        db_password: mariadb
-        db_name: keystone
-        db_host: mariadb.default.svc.cluster.local
-        debug: True
-        log_file: '/var/log/keystone/keystone.log'
+      db_user: keystone_user::user_name
+      db_password: keystone_user::user_password
+      db_name: keystone_db::db_name
+      db_host: keystone_db::db_host
+      debug: True
+      log_file: '/var/log/keystone/keystone.log'
+      admin_token: keystone_token
       hash:
         computable:
           connections:
-          - keystone_config_map::C::NO_EVENTS
+          - keystone_config_map::db_user::NO_EVENTS
+          - keystone_config_map::db_password::NO_EVENTS
+          - keystone_config_map::db_name::NO_EVENTS
+          - keystone_config_map::db_host::NO_EVENTS
+          - keystone_config_map::debug::NO_EVENTS
+          - keystone_config_map::log_file::NO_EVENTS
+          - keystone_config_map::admin_token::NO_EVENTS
 
   - id: keystone_api_deployment
     from: k8s-modules/KeystoneDeployment
@@ -21,10 +49,98 @@ resources:
       dns_name: keystone-api-deployment
       labels:
         app: keystone-api
-      command: /usr/bin/keystone-all
+      command: ["sh", "-c", "keystone-manage db_sync && /usr/bin/keystone-all"]
       image: registry01-scc.fuel-infra.org/nextgen/ubuntu-binary-keystone:latest
       container_name: keystone
       public_port: 5000
       admin_port: 35357
-      config_map: keystone-config
+      config_map: keystone_config_map::dns_name
       config_map_revision: keystone_config_map::hash
+
+  - id: keystone_service
+    from: k8s-modules/KeystoneService
+    input:
+      dns_name: keystone-service
+      public_port: keystone_api_deployment::public_port
+      admin_port: keystone_api_deployment::admin_port
+      selector:
+        app: keystone-api
+
+  - id: keystone_service_endpoint
+    from: resources/keystone_service_endpoint
+    location: k8s_api
+    input:
+      keystone_host: keystone_service::dns_name
+      keystone_admin_port: keystone_service::admin_port
+      admin_token: keystone_config_map::admin_token
+      admin_ip: keystone_service::dns_name
+      admin_port: keystone_api_deployment::admin_port
+      internal_ip: keystone_service::dns_name
+      internal_port: keystone_api_deployment::public_port
+      public_ip: keystone_service::dns_name
+      public_port: keystone_api_deployment::public_port
+      endpoint_name: 'keystone'
+      adminurl: 'http://{{admin_ip}}:{{admin_port}}/v2.0'
+      internalurl: 'http://{{internal_ip}}:{{internal_port}}/v2.0'
+      publicurl: 'http://{{public_ip}}:{{public_port}}/v2.0'
+      description: 'OpenStack Identity Service'
+      type: 'identity'
+
+  - id: admin_tenant
+    from: resources/keystone_tenant
+    location: k8s_api
+    input:
+      keystone_host: keystone_service::dns_name
+      keystone_port: keystone_service::admin_port
+      admin_token: keystone_config_map::admin_token
+      tenant_name: admin
+
+  - id: admin_user
+    from: resources/keystone_user
+    location: k8s_api
+    input:
+      keystone_host: keystone_service::dns_name
+      keystone_port: keystone_service::admin_port
+      admin_token: keystone_config_map::admin_token
+      user_name: admin
+      user_password: admin
+      tenant_name: admin_tenant::tenant_name
+
+  - id: admin_role
+    from: resources/keystone_role
+    location: k8s_api
+    input:
+      keystone_host: keystone_service::dns_name
+      keystone_port: keystone_service::admin_port
+      admin_token: keystone_config_map::admin_token
+      tenant_name: admin_tenant::tenant_name
+      user_name: admin_user::user_name
+      role_name: admin
+    
+  - id: services_tenant
+    from: resources/keystone_tenant
+    location: k8s_api
+    input:
+      keystone_host: keystone_service::dns_name
+      keystone_port: keystone_service::admin_port
+      admin_token: keystone_config_map::admin_token
+      tenant_name: 'services'
+
+  - id: admin_role_services
+    from: resources/keystone_role
+    location: k8s_api
+    input:
+      keystone_host: keystone_service::dns_name
+      keystone_port: keystone_service::admin_port
+      admin_token: keystone_config_map::admin_token
+      tenant_name: services_tenant::tenant_name
+      user_name: admin_user::user_name
+      role_name: 'services'
+
+  # XXX: think how to do it
+  #- id: keystone_db_sync
+  #  from: resources/ansible_job
+  #  location: k8s_api
+  #  input:
+  #    command: "keystone-manage db-sync"
+  #    image: registry01-scc.fuel-infra.org/nextgen/ubuntu-binary-keystone:latest
